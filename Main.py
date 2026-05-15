@@ -265,7 +265,7 @@ def build_dashboard_screen():
 
     # Welcome label
     welcome_label = Label(
-        text=f'[b]WELCOME {signedin_name.upper()}![/b]',
+        text=f'[b]WELCOME [/b]',
         markup=True,
         font_size=28,
         size_hint=(None, None), size=(300, 30),
@@ -337,7 +337,7 @@ def build_dashboard_screen():
     for col in headers:
         table.add_widget(Label(text=f"[b]{col}[/b]", markup=True,
                             color="yellow", size_hint_y=None, height=40))
-    ref=db.reference('transaction')
+    ref=db.reference('transactions')
     transactions=ref.get()
     if transactions:
         for transaction_id, transaction_info in transactions.items():
@@ -360,7 +360,9 @@ def build_dashboard_screen():
                     except:
                         share_text=str(share)
                 table.add_widget(Label(text=f'Share={share_text}',size_hint_y=None,height=30))
-
+    scroll=ScrollView(size_hint=(1,0.6),pos_hint={"x":0,"y":0.15})
+    scroll.add_widget(table)
+    layout.add_widget(scroll)
     # Buttons at bottom
     btn_layout = BoxLayout(
         orientation='horizontal',
@@ -469,8 +471,8 @@ def add_members(instance):
             'password': new_user_password
         })
         show_popup('Sucess',f'{name} Has Been Added succesfuly')
-        name_input.text=''
-        email_input.text=''
+        member_name_input.text=''
+        member_email_input.text=''
         contact_input.text=''
         
 def send_group_member_email(email):
@@ -478,7 +480,8 @@ def send_group_member_email(email):
     sender_email='orangetree254@gmail.com'
     sender_password='ptwq denh qjub dvpo'
     subject='You have been added to the splitwise app.'
-    ref=db.reference('user')
+    password=None
+    ref=db.reference('users')
     users_data=ref.get()
     if users_data:
         for user_id,user_info in users_data.items():
@@ -505,21 +508,27 @@ def send_group_member_email(email):
         show_popup('Error','Invitation Mail was not able to be sent.')
         
 def add_expense(instance):
-    who=who_paid_spinner.text()
+    fetch_group_members()
+    who=who_paid_spinner.text
     description=description_input.text.strip()
     amount=amount_input.text.strip()
     if not who or not description or not amount:
         show_popup('Error', 'Fill in all fields')
         return
     amount=float(amount)
-    split_amount=len(group_members)
-    split_dict=dict.fromkeys(group_members,split_amount)
+    split_amount=amount/len(group_members)
+    split_dict={}
+    for member in group_members:
+        split_dict[member]=split_amount
+        
+        
+    #split_dict=dict.fromkeys(group_members,split_amount)
     ref=db.reference('transactions')
     ref.push({
         'transaction_id': random.randint(1000,9999),
         'description':description,
         'amount': amount,
-        'who_paid':who
+        'who_paid':who,
         'split': split_dict
     })
     
@@ -587,7 +596,7 @@ def build_add_expense_screen():
     # Buttons
     add_btn = Button(text='Add', size_hint=(0.4, None), height=50,
                      pos_hint={'center_x': 0.5, 'center_y': 0.28},
-                     background_color=PRIMARY_COLOR, color=BUTTON_TEXT_COLOR,
+                     background_color=PRIMARY_COLOR, color=BUTTON_TEXT_COLOR,on_press=add_expense
                      )
 
     back_btn = Button(
