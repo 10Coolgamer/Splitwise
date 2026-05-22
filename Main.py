@@ -162,7 +162,23 @@ def on_submit(instance):
         show_popup('Success','Login was successful.')
         sm.current='Dashboard'
 # ----SCREEN TEMPLATES----
-
+def calulate_user_balance():
+    transaction_ref=db.reference('transaction')
+    transactions=transaction_ref.get()
+    i_owe=0.00
+    others_owe=0.00
+    if not transactions:
+        return i_owe, others_owe
+    for transaction_id, transaction_data in transactions.items():
+        who_paid=transaction_data['Who paid']
+        if who_paid != signedin_name():
+            i_owe+=transaction_data['split']['signed in name']
+        if who_paid == signedin_name():
+            split_data=transaction_data['split']
+            for name,amount in split_data.items():
+                if name != signedin_name:
+                    others_owe+=amount
+            return round(i_owe,2),round(others_owe,2)
 # --- Login Screen ---
 def build_login_screen():
     global email_input,password_input
@@ -258,8 +274,7 @@ def build_signup_screen():
 #-----Dashboard-----
 
 def build_dashboard_screen():
-  
-    global owe_amount_label, other_owe_amount_label
+    global owe_amount_label, other_owe_amount_label,table
 
     layout = FloatLayout(size_hint=(1, 1))
 
@@ -312,7 +327,7 @@ def build_dashboard_screen():
         background_color=SECONDARY_COLOR,
         color=(1, 1, 1, 1),
         font_size=16,
-       
+        on_press=refresh_balances
     )
 
     # Add all to the info box
@@ -623,12 +638,24 @@ def build_add_expense_screen():
 
     return layout
 
+def refresh_balances(instance):
+    db.reference('transaction').delete()
+    table.clear_widgets()
+    owe_amount_label.text='0.00'
+    other_owe_amount_label.text='0.00'
+    show_popup('Info','Dasboard Refreshed, All Transactions Cleared!')
+    
+
 signup_screen=Screen(name='Signup')
 signup_screen.add_widget(build_signup_screen())
 login_screen=Screen(name='Login')
 login_screen.add_widget(build_login_screen())
 dashboard_screen=Screen(name='Dashboard')
-dashboard_screen.add_widget(build_dashboard_screen())
+def update_dashboard_screen(*args):
+    dashboard_screen.clear_widgets()
+    dashboard_screen.add_widget(build_dashboard_screen())
+
+dashboard_screen.bind(on_enter=update_dashboard_screen)
 group_screen=Screen(name='Group')
 group_screen.add_widget(build_add_group_screen())
 expense_screen=Screen(name='Expense')
