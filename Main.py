@@ -170,9 +170,9 @@ def calculate_user_balance():
     if not transactions:
         return i_owe, others_owe
     for transaction_id, transaction_data in transactions.items():
-        who_paid=transaction_data.get('who paid')
+        who_paid=transaction_data.get('who_paid')
         if who_paid != signedin_name:
-            i_owe+=transaction_data['split'].get('signed in name',0)
+            i_owe+=transaction_data['split'].get(signedin_name,0)
         if who_paid == signedin_name:
             split_data=transaction_data['split']
             for name,amount in split_data.items():
@@ -518,6 +518,7 @@ def send_group_member_email(email):
         server.login(sender_email,sender_password)
         server.sendmail(sender_email,email,message.as_string())
         server.quit()
+        send_group_member_email(email)
         show_popup('Success','Invitation Mail sent.')
     except:
         show_popup('Error','Invitation Mail was not able to be sent.')
@@ -530,7 +531,11 @@ def add_expense(instance):
     if not who or not description or not amount:
         show_popup('Error', 'Fill in all fields')
         return
-    amount=float(amount)
+    try:  
+        amount=float(amount)
+    except ValueError:
+        show_popup('Error', 'Amount must be numeric')
+        return
     split_amount=amount/len(group_members)
     split_dict={}
     for member in group_members:
