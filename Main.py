@@ -162,23 +162,23 @@ def on_submit(instance):
         show_popup('Success','Login was successful.')
         sm.current='Dashboard'
 # ----SCREEN TEMPLATES----
-def calulate_user_balance():
-    transaction_ref=db.reference('transaction')
+def calculate_user_balance():
+    transaction_ref=db.reference('transactions')
     transactions=transaction_ref.get()
     i_owe=0.00
     others_owe=0.00
     if not transactions:
         return i_owe, others_owe
     for transaction_id, transaction_data in transactions.items():
-        who_paid=transaction_data['Who paid']
-        if who_paid != signedin_name():
-            i_owe+=transaction_data['split']['signed in name']
-        if who_paid == signedin_name():
+        who_paid=transaction_data.get('who paid')
+        if who_paid != signedin_name:
+            i_owe+=transaction_data['split'].get('signed in name',0)
+        if who_paid == signedin_name:
             split_data=transaction_data['split']
             for name,amount in split_data.items():
                 if name != signedin_name:
                     others_owe+=amount
-            return round(i_owe,2),round(others_owe,2)
+    return round(i_owe,2),round(others_owe,2)
 # --- Login Screen ---
 def build_login_screen():
     global email_input,password_input
@@ -339,7 +339,7 @@ def build_dashboard_screen():
     layout.add_widget(info_float)
 
     # Group members
-    group =["member1", "member2", "member3"]  # Placeholder for group members
+    group = fetch_group_members() or []  # Placeholder for group members
     num_members = len(group)
     cols = 3 + num_members
 
@@ -639,10 +639,11 @@ def build_add_expense_screen():
     return layout
 
 def refresh_balances(instance):
-    db.reference('transaction').delete()
+    db.reference('transactions').delete()
     table.clear_widgets()
-    owe_amount_label.text='0.00'
-    other_owe_amount_label.text='0.00'
+    i_owe,others_owe=calculate_user_balance()
+    owe_amount_label.text=str(i_owe)
+    other_owe_amount_label.text=str(others_owe)
     show_popup('Info','Dasboard Refreshed, All Transactions Cleared!')
     
 
